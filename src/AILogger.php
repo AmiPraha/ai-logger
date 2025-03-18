@@ -4,6 +4,8 @@ namespace AmiPraha\AILogger;
 
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
+use Monolog\LogRecord;
+use Illuminate\Support\Facades\Log;
 
 class AILogger extends AbstractProcessingHandler
 {
@@ -11,40 +13,61 @@ class AILogger extends AbstractProcessingHandler
 
     public function __construct(string $webhookUrl, $level = Logger::DEBUG, bool $bubble = true)
     {
-        $this->webhookUrl = $webhookUrl;
         parent::__construct($level, $bubble);
+        $this->webhookUrl = $webhookUrl;
     }
 
     /**
      * Writes the log to the external webhook.
      *
-     * @param array $record
+     * @param LogRecord $record
      * @return void
      */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         $payload = [
-            'level'     => $record['level_name'],
-            'message'   => $record['message'],
-            'context'   => $record['context'],
-            'timestamp' => $record['datetime']->format('Y-m-d H:i:s'),
+            'level'     => $record->level->getName(),
+            'message'   => $record->message,
+            'context'   => $record->context,
+            'timestamp' => $record->datetime->format('Y-m-d H:i:s'),
         ];
 
-        try {
-            // Basic cURL example to send JSON data
-            $ch = curl_init($this->webhookUrl);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json'
-            ]);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $jsonPayload = json_encode($payload);
 
-            curl_exec($ch);
-            curl_close($ch);
-        } catch (\Exception $e) {
-            // If an error occurs while sending the log, you can decide how to handle it.
-            // For instance, you could silently fail or log locally.
+        if ($jsonPayload === false) {
+            Log::error('AILogger: JSON encoding error - ' . json_last_error_msg());
+            return;
         }
+
+        $ch = curl_init($this->webhookUrl);
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $jsonPayload,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_CONNECTTIMEOUT => 2,
+        ]);
+
+        $response = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            Log::error('AILogger: cURL error - ' . curl_error($ch));
+        } else {
+            $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if ($httpStatusCode < 200 || $httpStatusCode >= 300) {
+                Log::error('AILogger: HTTP error', [
+                    'status_code' => $httpStatusCode,
+                    'response'    => $response,
+                ]);
+            }
+        }
+
+        curl_close($ch);
     }
 }
