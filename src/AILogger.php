@@ -1,6 +1,6 @@
 <?php
 
-namespace YourVendor\AILogger;
+namespace AmiPraha\AILogger;
 
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;

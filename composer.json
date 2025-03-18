@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "YourVendor\\AILogger\\": "src/"
+            "AmiPraha\\AILogger\\": "src/"
         }
     },
     "extra": {

@@ -1,6 +1,6 @@
 <?php
 
-namespace YourVendor\AILogger;
+namespace AmiPraha\AILogger;
 
 use Illuminate\Support\ServiceProvider;
 use Monolog\Logger;
