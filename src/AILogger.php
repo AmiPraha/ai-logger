@@ -35,7 +35,8 @@ class AILogger extends AbstractProcessingHandler
         $jsonPayload = json_encode($payload);
 
         if ($jsonPayload === false) {
-            Log::error('AILogger: JSON encoding error - ' . json_last_error_msg());
+            $this->logInternalError('JSON encoding error - ' . json_last_error_msg());
+            
             return;
         }
 
@@ -56,12 +57,12 @@ class AILogger extends AbstractProcessingHandler
         $response = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            Log::error('AILogger: cURL error - ' . curl_error($ch));
+            $this->logInternalError('cURL error - ' . curl_error($ch) . '. Probably invalid webhook URL.');
         } else {
             $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             if ($httpStatusCode < 200 || $httpStatusCode >= 300) {
-                Log::error('AILogger: HTTP error', [
+                $this->logInternalError('HTTP error', [
                     'status_code' => $httpStatusCode,
                     'response'    => $response,
                 ]);
@@ -69,5 +70,35 @@ class AILogger extends AbstractProcessingHandler
         }
 
         curl_close($ch);
+    }
+
+    /**
+     * Writes internal errors to a dedicated log file, bypassing Laravel's logging.
+     *
+     * @param string $message
+     * @param array  $context
+     * @return void
+     */
+    protected function logInternalError(string $message, array $context = []): void
+    {
+        // Build a log line with a timestamp, the error level, message, and optional context.
+        $timestamp = date('Y-m-d H:i:s');
+        $line = "[$timestamp] [AILogger INTERNAL ERROR] $message";
+
+        // If there is context data, you can dump it as JSON (or var_export) and append it
+        if (!empty($context)) {
+            $contextJson = json_encode($context);
+            $line .= " | context: " . ($contextJson === false ? print_r($context, true) : $contextJson);
+        }
+
+        $line .= "\n";
+
+        // Write to a dedicated file. Adjust the path to wherever you want your package’s error file to live.
+        // If this package runs under Laravel, you could do:
+        //   file_put_contents(storage_path('logs/ailogger_critical.log'), $line, FILE_APPEND);
+        //
+        // But if you want the package to be self-contained (without relying on storage_path()),
+        // you can do something like:
+        file_put_contents(storage_path('logs/ai_logger_critical.log'), $line, FILE_APPEND);
     }
 }
