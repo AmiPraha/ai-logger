@@ -17,13 +17,19 @@ class AILoggerServiceProvider extends ServiceProvider
     {
         // Register custom logging channel via Log::extend()
         Log::extend('ai-logger', function ($app, array $config) {
+            // Convert the string level to Monolog's Level enum
+            $levelEnum = Logger::toMonologLevel($config['level'] ?? 'debug');
+
+            // Convert the enum to its underlying integer
+            $monologLevel = $levelEnum->value;
+
             return new Logger('ai-logger', [
                 new AILogger(
                     $config['webhookUrl'] ?? null,
                     $config['sourceCode'] ?? null,
                     $config['sourceName'] ?? null,
                     $config['sourceUrl'] ?? null,
-                    Logger::toMonologLevel($config['level'] ?? 'debug'),
+                    $monologLevel,
                     $config['bubble'] ?? true
                 ),
             ]);
