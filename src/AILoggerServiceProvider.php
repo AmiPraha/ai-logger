@@ -18,7 +18,14 @@ class AILoggerServiceProvider extends ServiceProvider
         // Register custom logging channel via Log::extend()
         Log::extend('ai-logger', function ($app, array $config) {
             return new Logger('ai-logger', [
-                new AILogger($config['webhookUrl']),
+                new AILogger(
+                    $config['webhookUrl'] ?? null,
+                    $config['sourceCode'] ?? null,
+                    $config['sourceName'] ?? null,
+                    $config['sourceUrl'] ?? null,
+                    $config['level'],
+                    $config['bubble']
+                ),
             ]);
         });
     }

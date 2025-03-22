@@ -21,10 +21,11 @@ No further configuration file publishing is necessary.
 Set the webhook URL in your application's `.env` file:
 
 ```ini
-AI_LOGGER_WEBHOOK_URL=https://your-external-webhook-endpoint
+AI_LOGGER_WEBHOOK_URL=https://ai-logger-webhook-endpoint
+AI_LOGGER_SOURCE_CODE=https://your-application-code
+AI_LOGGER_SOURCE_NAME=https://your-application-name
+AI_LOGGER_SOURCE_URL=https://your-application-url
 ```
-
-If not set, the default fallback (`https://example.com/ai-logger`) will be used.
 
 ### Configuring Logging Channel
 In Laravel’s `config/logging.php`, add a new channel `ai-logger`:
@@ -39,7 +40,10 @@ return [
 
         'ai-logger' => [
             'driver' => 'ai-logger',
-            'webhookUrl' => env('AI_LOGGER_WEBHOOK_URL', 'https://example.com/ai-logger'),
+            'webhookUrl' => env('AI_LOGGER_WEBHOOK_URL', 'http://ai-logger.test/api/receive'),
+            'sourceCode' => env('AI_LOGGER_SOURCE_CODE', 'SVPFIC'),
+            'sourceName' => env('AI_LOGGER_SOURCE_NAME', 'Skladové vozy Fiat CZ'),
+            'sourceUrl' => env('AI_LOGGER_SOURCE_URL', 'http://skladovky-fiat-cz.test'),
             'level' => 'debug',
         ],
     ],

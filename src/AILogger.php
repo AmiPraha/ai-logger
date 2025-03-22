@@ -5,16 +5,22 @@ namespace AmiPraha\AILogger;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Monolog\LogRecord;
-use Illuminate\Support\Facades\Log;
 
 class AILogger extends AbstractProcessingHandler
 {
-    protected string $webhookUrl;
+    protected ?string $webhookUrl;
+    protected ?string $sourceCode;
+    protected ?string $sourceName;
+    protected ?string $sourceUrl;
 
-    public function __construct(string $webhookUrl, $level = Logger::DEBUG, bool $bubble = true)
+    public function __construct(?string $webhookUrl = null, ?string $sourceCode = null, ?string $sourceName = null, ?string $sourceUrl = null, $level = Logger::DEBUG, bool $bubble = true)
     {
         parent::__construct($level, $bubble);
+
         $this->webhookUrl = $webhookUrl;
+        $this->sourceCode = $sourceCode;
+        $this->sourceName = $sourceName;
+        $this->sourceUrl = $sourceUrl;
     }
 
     /**
@@ -25,18 +31,29 @@ class AILogger extends AbstractProcessingHandler
      */
     protected function write(LogRecord $record): void
     {
+        if (empty($this->webhookUrl) || empty($this->sourceCode) || empty($this->sourceName) || empty($this->sourceUrl)) {
+            $this->logInternalError('webhookUrl, sourceCode, sourceName, or sourceUrl is missing, please add all of them to your config. See ai-logger documentation for more info.');
+
+            return;
+        }
+
         $payload = [
             'level'     => $record->level->getName(),
             'message'   => $record->message,
             'context'   => $record->context,
             'timestamp' => $record->datetime->format('Y-m-d H:i:s'),
+            'source'    => [
+                'code' => $this->sourceCode,
+                'name' => $this->sourceName,
+                'url'  => $this->sourceUrl,
+            ]
         ];
 
         $jsonPayload = json_encode($payload);
 
         if ($jsonPayload === false) {
             $this->logInternalError('JSON encoding error - ' . json_last_error_msg());
-            
+
             return;
         }
 
