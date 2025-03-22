@@ -23,8 +23,8 @@ class AILoggerServiceProvider extends ServiceProvider
                     $config['sourceCode'] ?? null,
                     $config['sourceName'] ?? null,
                     $config['sourceUrl'] ?? null,
-                    $config['level'],
-                    $config['bubble']
+                    Logger::toMonologLevel($config['level'] ?? 'debug'),
+                    $config['bubble'] ?? true
                 ),
             ]);
         });

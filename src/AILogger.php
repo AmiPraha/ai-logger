@@ -13,7 +13,7 @@ class AILogger extends AbstractProcessingHandler
     protected ?string $sourceName;
     protected ?string $sourceUrl;
 
-    public function __construct(?string $webhookUrl = null, ?string $sourceCode = null, ?string $sourceName = null, ?string $sourceUrl = null, $level = Logger::DEBUG, bool $bubble = true)
+    public function __construct(?string $webhookUrl = null, ?string $sourceCode = null, ?string $sourceName = null, ?string $sourceUrl = null, int $level = Logger::DEBUG, bool $bubble = true)
     {
         parent::__construct($level, $bubble);
 
