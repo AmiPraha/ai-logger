@@ -77,12 +77,21 @@ class AILogger extends AbstractProcessingHandler
             $this->logInternalError('cURL error - ' . curl_error($ch) . '. Probably invalid webhook URL.');
         } else {
             $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $decodedResponse = json_decode($response, true);
 
             if ($httpStatusCode < 200 || $httpStatusCode >= 300) {
                 $this->logInternalError('HTTP error', [
                     'status_code' => $httpStatusCode,
-                    'response'    => $response,
+                    'message' => $decodedResponse['message'] ?? 'Unknown error',
+                    'errors'  => $decodedResponse['errors'] ?? null,
+                    'raw_response' => $response,
                 ]);
+            } else {
+                if (!isset($decodedResponse['status']) || $decodedResponse['status'] !== 'success') {
+                    $this->logInternalError('Unexpected API response format or failed status', [
+                        'response' => $decodedResponse,
+                    ]);
+                }
             }
         }
 
