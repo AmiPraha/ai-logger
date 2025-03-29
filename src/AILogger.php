@@ -5,6 +5,8 @@ namespace AmiPraha\AILogger;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Monolog\LogRecord;
+use Throwable;
+use Illuminate\Support\Arr;
 
 class AILogger extends AbstractProcessingHandler
 {
@@ -31,71 +33,79 @@ class AILogger extends AbstractProcessingHandler
      */
     protected function write(LogRecord $record): void
     {
-        if (empty($this->webhookUrl) || empty($this->sourceCode) || empty($this->sourceName) || empty($this->sourceUrl)) {
-            $this->logInternalError('webhookUrl, sourceCode, sourceName, or sourceUrl is missing, please add all of them to your config. See ai-logger documentation for more info.');
+        try {
+            if (empty($this->webhookUrl) || empty($this->sourceCode) || empty($this->sourceName) || empty($this->sourceUrl)) {
+                $this->logInternalError('webhookUrl, sourceCode, sourceName, or sourceUrl is missing, please add all of them to your config. See ai-logger documentation for more info.');
 
-            return;
-        }
+                return;
+            }
 
-        $payload = [
-            'level'     => $record->level->getName(),
-            'message'   => $record->message,
-            'context'   => $record->context,
-            'timestamp' => $record->datetime->format('Y-m-d H:i:s'),
-            'source'    => [
-                'code' => $this->sourceCode,
-                'name' => $this->sourceName,
-                'url'  => $this->sourceUrl,
-            ]
-        ];
+            $payload = [
+                'level'     => $record->level->getName(),
+                'message'   => $record->message,
+                'context'   => $record->context,
+                'timestamp' => $record->datetime->format('Y-m-d H:i:s'),
+                'source'    => [
+                    'code' => $this->sourceCode,
+                    'name' => $this->sourceName,
+                    'url'  => $this->sourceUrl,
+                ]
+            ];
 
-        $jsonPayload = json_encode($payload);
+            if (!empty($record->context['exception'])) {
+                $payload['context']['exception'] = $this->formatExceptionToArray($record->context['exception']);
+            }
 
-        if ($jsonPayload === false) {
-            $this->logInternalError('JSON encoding error - ' . json_last_error_msg());
+            $jsonPayload = json_encode($payload);
 
-            return;
-        }
+            if ($jsonPayload === false) {
+                $this->logInternalError('JSON encoding error - ' . json_last_error_msg());
 
-        $ch = curl_init($this->webhookUrl);
+                return;
+            }
 
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $jsonPayload,
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
-            CURLOPT_CONNECTTIMEOUT => 2,
-        ]);
+            $ch = curl_init($this->webhookUrl);
 
-        $response = curl_exec($ch);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $jsonPayload,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+                CURLOPT_CONNECTTIMEOUT => 2,
+            ]);
 
-        if (curl_errno($ch)) {
-            $this->logInternalError('cURL error - ' . curl_error($ch) . '. Probably invalid webhook URL.');
-        } else {
-            $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $decodedResponse = json_decode($response, true);
+            $response = curl_exec($ch);
 
-            if ($httpStatusCode < 200 || $httpStatusCode >= 300) {
-                $this->logInternalError('HTTP error', [
-                    'status_code' => $httpStatusCode,
-                    'message' => $decodedResponse['message'] ?? 'Unknown error',
-                    'errors'  => $decodedResponse['errors'] ?? null,
-                    'raw_response' => $response,
-                ]);
+            if (curl_errno($ch)) {
+                $this->logInternalError('cURL error - ' . curl_error($ch) . '. Probably invalid webhook URL.');
             } else {
-                if (!isset($decodedResponse['status']) || $decodedResponse['status'] !== 'success') {
-                    $this->logInternalError('Unexpected API response format or failed status', [
-                        'response' => $decodedResponse,
+                $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $decodedResponse = json_decode($response, true);
+
+                if ($httpStatusCode < 200 || $httpStatusCode >= 300) {
+                    $this->logInternalError('HTTP error', [
+                        'status_code' => $httpStatusCode,
+                        'message' => $decodedResponse['message'] ?? 'Unknown error',
+                        'errors'  => $decodedResponse['errors'] ?? null,
+                        'raw_response' => $response,
                     ]);
+                } else {
+                    if (!isset($decodedResponse['status']) || $decodedResponse['status'] !== 'success') {
+                        $this->logInternalError('Unexpected API response format or failed status', [
+                            'response' => $decodedResponse,
+                        ]);
+                    }
                 }
             }
-        }
 
-        curl_close($ch);
+            curl_close($ch);
+        } catch (Throwable $e) {
+            $this->logInternalError('Fatal error: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in file' . $e->getFile());
+        }
     }
 
     /**
@@ -126,5 +136,19 @@ class AILogger extends AbstractProcessingHandler
         // But if you want the package to be self-contained (without relying on storage_path()),
         // you can do something like:
         file_put_contents(storage_path('logs/ai_logger_critical.log'), $line, FILE_APPEND);
+    }
+
+    protected function formatExceptionToArray(Throwable $e): array
+    {
+        return [
+            'type' => get_class($e),
+            'message' => $e->getMessage(),
+            'code' => $e->getCode(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => collect($e->getTrace())->map(function ($trace) {
+                return Arr::only($trace, ['file', 'line', 'function', 'class', 'type']);
+            })->all(),
+        ];
     }
 }
