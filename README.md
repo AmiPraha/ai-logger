@@ -21,10 +21,10 @@ No further configuration file publishing is necessary.
 Set the webhook URL in your application's `.env` file:
 
 ```ini
-AI_LOGGER_WEBHOOK_URL=https://ai-logger-webhook-endpoint
-AI_LOGGER_SOURCE_CODE=https://your-application-code
-AI_LOGGER_SOURCE_NAME=https://your-application-name
-AI_LOGGER_SOURCE_URL=https://your-application-url
+AI_LOGGER_WEBHOOK_URL="http://ai-logger.test/api/receive"
+AI_LOGGER_SOURCE_CODE="EXAMPLEAPP"
+AI_LOGGER_SOURCE_NAME="Example App"
+AI_LOGGER_SOURCE_URL="http://example-app.test"
 ```
 
 ### Configuring Logging Channel
@@ -40,10 +40,10 @@ return [
 
         'ai-logger' => [
             'driver' => 'ai-logger',
-            'webhookUrl' => env('AI_LOGGER_WEBHOOK_URL', 'http://ai-logger.test/api/receive'),
-            'sourceCode' => env('AI_LOGGER_SOURCE_CODE', 'EXAMPLEAPP'),
-            'sourceName' => env('AI_LOGGER_SOURCE_NAME', 'Example App'),
-            'sourceUrl' => env('AI_LOGGER_SOURCE_URL', 'http://example-app.test'),
+            'webhookUrl' => env('AI_LOGGER_WEBHOOK_URL'),
+            'sourceCode' => env('AI_LOGGER_SOURCE_CODE'),
+            'sourceName' => env('AI_LOGGER_SOURCE_NAME'),
+            'sourceUrl' => env('AI_LOGGER_SOURCE_URL'),
             'level' => 'debug',
         ],
     ],
