@@ -53,8 +53,8 @@ class AILogger extends AbstractProcessingHandler
                 'level'     => $record->level->getName(),
                 'message'   => $record->message,
                 'context'   => $record->context,
-                'url'       => $this->getRequestUrl(),
                 'debug_data' => [
+                    'url' => $this->getRequestUrl(),
                     'method' => $this->getRequestMethod(),
                     'route_name' => $this->getRouteName(),
                     'route_action' => $this->getRouteAction(),
