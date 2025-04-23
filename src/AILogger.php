@@ -7,6 +7,9 @@ use Monolog\Logger;
 use Monolog\LogRecord;
 use Throwable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\App;
 
 class AILogger extends AbstractProcessingHandler
 {
@@ -15,8 +18,14 @@ class AILogger extends AbstractProcessingHandler
     protected ?string $sourceName;
     protected ?string $sourceUrl;
 
-    public function __construct(?string $webhookUrl = null, ?string $sourceCode = null, ?string $sourceName = null, ?string $sourceUrl = null, int $level = Logger::DEBUG, bool $bubble = true)
-    {
+    public function __construct(
+        ?string $webhookUrl = null,
+        ?string $sourceCode = null,
+        ?string $sourceName = null,
+        ?string $sourceUrl = null,
+        int $level = 100, // debug
+        bool $bubble = true
+    ) {
         parent::__construct($level, $bubble);
 
         $this->webhookUrl = $webhookUrl;
@@ -44,12 +53,41 @@ class AILogger extends AbstractProcessingHandler
                 'level'     => $record->level->getName(),
                 'message'   => $record->message,
                 'context'   => $record->context,
-                'timestamp' => $record->datetime->format('Y-m-d H:i:s'),
-                'source'    => [
+                'url'       => $this->getRequestUrl(),
+                'debug_data' => [
+                    'method' => $this->getRequestMethod(),
+                    'route_name' => $this->getRouteName(),
+                    'route_action' => $this->getRouteAction(),
+                    'is_console' => $this->isRunningInConsole(),
+                    'environment' => $this->getEnvironment(),
+                ],
+                'performance' => [
+                    'memory_usage' => [
+                        'value' => round(memory_get_usage(true) / 1024 / 1024, 2),
+                        'unit' => 'MB'
+                    ],
+                    'peak_memory' => [
+                        'value' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+                        'unit' => 'MB'
+                    ],
+                    'execution_time' => [
+                        'value' => $this->getExecutionTime(),
+                        'unit' => 'ms'
+                    ],
+                ],
+                'user_tracking_data' => [
+                    'logger_user_id'    => $this->getUserId(),
+                    'logger_user_name'  => $this->getLoggerUserName(),
+                    'logger_user_email' => $this->getUserEmail(),
+                    'ip'                => $this->getClientIp(),
+                    'user_agent'        => $this->getUserAgent(),
+                    'referer'           => $this->getReferer(),
+                ],
+                'source' => [
                     'code' => $this->sourceCode,
                     'name' => $this->sourceName,
                     'url'  => $this->sourceUrl,
-                ]
+                ],
             ];
 
             if (!empty($record->context['exception'])) {
@@ -117,25 +155,22 @@ class AILogger extends AbstractProcessingHandler
      */
     protected function logInternalError(string $message, array $context = []): void
     {
-        // Build a log line with a timestamp, the error level, message, and optional context.
-        $timestamp = date('Y-m-d H:i:s');
-        $line = "[$timestamp] [AILogger INTERNAL ERROR] $message";
+        try {
+            $timestamp = date('Y-m-d H:i:s');
+            $line = "[$timestamp] [AILogger INTERNAL ERROR] $message";
 
-        // If there is context data, you can dump it as JSON (or var_export) and append it
-        if (!empty($context)) {
-            $contextJson = json_encode($context);
-            $line .= " | context: " . ($contextJson === false ? print_r($context, true) : $contextJson);
+            if (!empty($context)) {
+                $contextJson = json_encode($context);
+                $line .= " | context: " . ($contextJson === false ? print_r($context, true) : $contextJson);
+            }
+
+            $line .= "\n";
+
+            file_put_contents(App::storagePath('logs/ai_logger_critical.log'), $line, FILE_APPEND);
+        } catch (Throwable $e) {
+            // If we can't even log the error, there's not much we can do
+            error_log("AILogger critical error: " . $e->getMessage());
         }
-
-        $line .= "\n";
-
-        // Write to a dedicated file. Adjust the path to wherever you want your package’s error file to live.
-        // If this package runs under Laravel, you could do:
-        //   file_put_contents(storage_path('logs/ailogger_critical.log'), $line, FILE_APPEND);
-        //
-        // But if you want the package to be self-contained (without relying on storage_path()),
-        // you can do something like:
-        file_put_contents(storage_path('logs/ai_logger_critical.log'), $line, FILE_APPEND);
     }
 
     protected function formatExceptionToArray(Throwable $e): array
@@ -150,5 +185,138 @@ class AILogger extends AbstractProcessingHandler
                 return Arr::only($trace, ['file', 'line', 'function', 'class', 'type']);
             })->all(),
         ];
+    }
+
+    protected function getRequestUrl(): ?string
+    {
+        try {
+            return Request::fullUrl();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getRequestMethod(): ?string
+    {
+        try {
+            return Request::method();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getRouteName(): ?string
+    {
+        try {
+            return Request::route()?->getName();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getRouteAction(): ?string
+    {
+        try {
+            return Request::route()?->getActionName();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function isRunningInConsole(): bool
+    {
+        try {
+            return App::runningInConsole();
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    protected function getEnvironment(): ?string
+    {
+        try {
+            return App::environment();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getExecutionTime(): float
+    {
+        try {
+            $startTime = defined('\LARAVEL_START') ? \LARAVEL_START : ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
+            return (microtime(true) - $startTime) * 1000;
+        } catch (Throwable $e) {
+            return 0.0;
+        }
+    }
+
+    protected function getUserId(): ?int
+    {
+        try {
+            return Auth::id();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getUserEmail(): ?string
+    {
+        try {
+            return Auth::user()?->email;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getClientIp(): ?string
+    {
+        try {
+            return Request::ip();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getUserAgent(): ?string
+    {
+        try {
+            return Request::userAgent();
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getReferer(): ?string
+    {
+        try {
+            return Request::header('referer');
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function getLoggerUserName(): ?string
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return null;
+            }
+
+            $name = $user->name ?? null;
+
+            if (empty($name)) {
+                $firstName = $user->first_name ?? $user->firstname ?? null;
+                $lastName = $user->last_name ?? $user->lastname ?? null;
+
+                $name = implode(' ', array_filter([$firstName, $lastName]));
+            }
+
+            return !empty($name) ? $name : null;
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 }
