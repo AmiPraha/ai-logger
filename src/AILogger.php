@@ -61,7 +61,7 @@ class AILogger extends AbstractProcessingHandler
                     'is_console' => $this->isRunningInConsole(),
                     'environment' => $this->getEnvironment(),
                 ],
-                'performance' => [
+                'performance_data' => [
                     'memory_usage' => [
                         'value' => round(memory_get_usage(true) / 1024 / 1024, 2),
                         'unit' => 'MB'
