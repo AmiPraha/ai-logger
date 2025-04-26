@@ -75,14 +75,14 @@ class AILogger extends AbstractProcessingHandler
                         'unit' => 'ms'
                     ],
                 ],
-                'user_tracking_data' => [
+                'user_tracking_data' => collect([
                     'logger_user_id'    => $this->getUserId(),
                     'logger_user_name'  => $this->getLoggerUserName(),
                     'logger_user_email' => $this->getUserEmail(),
                     'ip'                => $this->getClientIp(),
                     'user_agent'        => $this->getUserAgent(),
                     'referer'           => $this->getReferer(),
-                ],
+                ])->filter()->all(),
                 'source' => [
                     'code' => $this->sourceCode,
                     'name' => $this->sourceName,
