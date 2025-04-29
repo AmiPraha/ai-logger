@@ -290,7 +290,11 @@ class AILogger extends AbstractProcessingHandler
     protected function getReferer(): ?string
     {
         try {
-            return Request::header('referer');
+            return Request::header('referer')
+                ?? Request::header('referrer') 
+                ?? $_SERVER['HTTP_REFERER'] 
+                ?? $_SERVER['HTTP_REFERRER'] 
+                ?? null;
         } catch (Throwable $e) {
             return null;
         }
