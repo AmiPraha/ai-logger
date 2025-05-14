@@ -28,7 +28,7 @@ AI_LOGGER_SOURCE_URL="http://example-app.test"
 ```
 
 ### Configuring Logging Channel
-In Laravel’s `config/logging.php`, add a new channel `ai-logger`:
+In Laravel's `config/logging.php`, add a new channel `ai-logger`. Also if you are using a `stack` channel and want to automatically send any logs to `ai-logger` (recommended), add it to `stack.channels` array:
 
 ```php
 // config/logging.php
@@ -38,13 +38,18 @@ return [
     'channels' => [
         // other channels...
 
+        'stack' => [
+            'driver' => 'stack',
+            'channels' => ['single', 'slack', 'ai-logger'],
+        ],
+
         'ai-logger' => [
             'driver' => 'ai-logger',
             'webhookUrl' => env('AI_LOGGER_WEBHOOK_URL'),
             'sourceCode' => env('AI_LOGGER_SOURCE_CODE'),
             'sourceName' => env('AI_LOGGER_SOURCE_NAME'),
             'sourceUrl' => env('AI_LOGGER_SOURCE_URL'),
-            'level' => 'debug',
+            'level' => 'warning',
         ],
     ],
 ];
