@@ -224,7 +224,8 @@ class AILogger extends AbstractProcessingHandler
     protected function getRouteName(): ?string
     {
         try {
-            return Request::route()?->getName();
+            $route = Request::route();
+            return $route ? $route->getName() : null;
         } catch (Throwable $e) {
             return null;
         }
@@ -233,7 +234,8 @@ class AILogger extends AbstractProcessingHandler
     protected function getRouteAction(): ?string
     {
         try {
-            return Request::route()?->getActionName();
+            $route = Request::route();
+            return $route ? $route->getActionName() : null;
         } catch (Throwable $e) {
             return null;
         }
