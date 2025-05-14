@@ -49,10 +49,10 @@ class AILogger extends AbstractProcessingHandler
     /**
      * Writes the log to the external webhook.
      *
-     * @param LogRecord $record
+     * @param array $record
      * @return void
      */
-    protected function write(LogRecord $record): void
+    protected function write(array $record): void
     {
         try {
             if (empty($this->webhookUrl) || empty($this->sourceCode) || empty($this->sourceName) || empty($this->sourceUrl)) {
@@ -62,9 +62,9 @@ class AILogger extends AbstractProcessingHandler
             }
 
             $payload = [
-                'level'     => $record->level->getName(),
-                'message'   => $record->message,
-                'context'   => $record->context,
+                'level'     => $record['level_name'],
+                'message'   => $record['message'],
+                'context'   => $record['context'],
                 'debug_data' => [
                     'url' => $this->getRequestUrl(),
                     'method' => $this->getRequestMethod(),
@@ -106,8 +106,8 @@ class AILogger extends AbstractProcessingHandler
                 ],
             ];
 
-            if (!empty($record->context['exception'])) {
-                $payload['context']['exception'] = $this->formatExceptionToArray($record->context['exception']);
+            if (!empty($record['context']['exception'])) {
+                $payload['context']['exception'] = $this->formatExceptionToArray($record['context']['exception']);
             }
 
             $jsonPayload = json_encode($payload);
