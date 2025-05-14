@@ -17,12 +17,20 @@ class AILogger extends AbstractProcessingHandler
     protected ?string $sourceCode;
     protected ?string $sourceName;
     protected ?string $sourceUrl;
+    protected ?string $sourceGitProjectOwner;
+    protected ?string $sourceGitProjectName;
+    protected ?string $sourceJiraProjectCode;
+    protected ?string $sourceJiraParentProjectKey;
 
     public function __construct(
         ?string $webhookUrl = null,
         ?string $sourceCode = null,
         ?string $sourceName = null,
         ?string $sourceUrl = null,
+        ?string $sourceGitProjectOwner = null,
+        ?string $sourceGitProjectName = null,
+        ?string $sourceJiraProjectCode = null,
+        ?string $sourceJiraParentProjectKey = null,
         int $level = 100, // debug
         bool $bubble = true
     ) {
@@ -32,6 +40,10 @@ class AILogger extends AbstractProcessingHandler
         $this->sourceCode = $sourceCode;
         $this->sourceName = $sourceName;
         $this->sourceUrl = $sourceUrl;
+        $this->sourceGitProjectOwner = $sourceGitProjectOwner;
+        $this->sourceGitProjectName = $sourceGitProjectName;
+        $this->sourceJiraProjectCode = $sourceJiraProjectCode;
+        $this->sourceJiraParentProjectKey = $sourceJiraParentProjectKey;
     }
 
     /**
@@ -87,6 +99,10 @@ class AILogger extends AbstractProcessingHandler
                     'code' => $this->sourceCode,
                     'name' => $this->sourceName,
                     'url'  => $this->sourceUrl,
+                    'git_project_owner' => $this->sourceGitProjectOwner,
+                    'git_project_name' => $this->sourceGitProjectName,
+                    'jira_project_code' => $this->sourceJiraProjectCode,
+                    'jira_parent_project_key' => $this->sourceJiraParentProjectKey,
                 ],
             ];
 

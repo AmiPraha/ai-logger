@@ -25,6 +25,10 @@ AI_LOGGER_WEBHOOK_URL="http://ai-logger.test/api/receive"
 AI_LOGGER_SOURCE_CODE="EXAMPLEAPP"
 AI_LOGGER_SOURCE_NAME="Example App"
 AI_LOGGER_SOURCE_URL="http://example-app.test"
+AI_LOGGER_SOURCE_GIT_PROJECT_OWNER="EXP"
+AI_LOGGER_SOURCE_GIT_PROJECT_NAME="example_app"
+AI_LOGGER_SOURCE_JIRA_PROJECT_CODE="EXPAPP"
+AI_LOGGER_SOURCE_JIRA_PARENT_PROJECT_KEY="EXPAPP-123"
 ```
 
 ### Configuring Logging Channel
@@ -49,6 +53,10 @@ return [
             'sourceCode' => env('AI_LOGGER_SOURCE_CODE'),
             'sourceName' => env('AI_LOGGER_SOURCE_NAME'),
             'sourceUrl' => env('AI_LOGGER_SOURCE_URL'),
+            'sourceGitProjectOwner' => env('AI_LOGGER_SOURCE_GIT_PROJECT_OWNER'),
+            'sourceGitProjectName' => env('AI_LOGGER_SOURCE_GIT_PROJECT_NAME'),
+            'sourceJiraProjectCode' => env('AI_LOGGER_SOURCE_JIRA_PROJECT_CODE'),
+            'sourceJiraParentProjectKey' => env('AI_LOGGER_SOURCE_JIRA_PARENT_PROJECT_KEY'),
             'level' => 'warning',
         ],
     ],

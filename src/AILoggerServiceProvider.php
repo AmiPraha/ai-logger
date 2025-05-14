@@ -29,6 +29,10 @@ class AILoggerServiceProvider extends ServiceProvider
                     $config['sourceCode'] ?? null,
                     $config['sourceName'] ?? null,
                     $config['sourceUrl'] ?? null,
+                    $config['sourceGitProjectOwner'] ?? null,
+                    $config['sourceGitProjectName'] ?? null,
+                    $config['sourceJiraProjectCode'] ?? null,
+                    $config['sourceJiraParentProjectKey'] ?? null,
                     $monologLevel,
                     $config['bubble'] ?? true
                 ),
