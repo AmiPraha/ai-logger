@@ -281,7 +281,8 @@ class AILogger extends AbstractProcessingHandler
     protected function getUserEmail(): ?string
     {
         try {
-            return Auth::user()?->email;
+            $user = Auth::user();
+            return $user ? $user->email : null;
         } catch (Throwable $e) {
             return null;
         }
