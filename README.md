@@ -11,7 +11,7 @@ This package adds a custom Laravel logging channel called `ai-logger`. When used
 Require the package via Composer:
 
 ```sh
-composer require ami-praha/ai-logger
+composer require ami-praha/ai-logger:"0.0.*"
 ```
 
 No further configuration file publishing is necessary.
